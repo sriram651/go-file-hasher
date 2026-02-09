@@ -1,0 +1,2 @@
+# Any file or directory that starts with "local-" will be ignored by Git.
+local-*
