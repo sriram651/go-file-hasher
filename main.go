@@ -1,11 +1,14 @@
 package main
 
 import (
+	"crypto/sha256"
 	"flag"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 )
 
@@ -21,6 +24,13 @@ func main() {
 
 	fmt.Println("Path to directory as given:", *directoryPath)
 
+	_, readDirErr := os.ReadDir(*directoryPath)
+
+	if readDirErr != nil {
+		fmt.Println(readDirErr)
+		os.Exit(1)
+	}
+
 	walkDirErr := filepath.WalkDir(*directoryPath, walkDirCallback)
 
 	if walkDirErr != nil {
@@ -35,8 +45,38 @@ func walkDirCallback(path string, d fs.DirEntry, err error) error {
 	}
 
 	if !d.IsDir() {
-		fmt.Println(d)
+		fileHashErr := hashFile(path)
+
+		if fileHashErr != nil {
+			fmt.Println(fileHashErr)
+		}
 	}
+
+	return nil
+}
+
+func hashFile(path string) error {
+	file, fileOpenErr := os.OpenFile(path, os.O_RDONLY, os.ModePerm)
+
+	if fileOpenErr != nil {
+		return fileOpenErr
+	}
+
+	defer file.Close()
+
+	hashSet := sha256.New()
+
+	bytesWritten, copyErr := io.Copy(hashSet, file)
+
+	if copyErr != nil {
+		return copyErr
+	}
+
+	resultForHashing := "Hashed file " + path + "(" + strconv.Itoa(int(bytesWritten)) + " bytes)\n"
+
+	fmt.Println(resultForHashing)
+
+	// TODO: We need to do something with the hashed file here!
 
 	return nil
 }
