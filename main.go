@@ -9,7 +9,6 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 )
 
@@ -52,20 +51,17 @@ func walkDirCallback(path string, d fs.DirEntry, err error) error {
 			fmt.Println(fileHashErr)
 		}
 
-		resultForHashing := "\nHashed file " + path + " (" + strconv.Itoa(int(hashBytesWritten)) + " bytes)"
-
-		fmt.Println(resultForHashing)
-
-		hashSuccessResult := "Encoded hash for " + path + " is: " + encodedHashString
-
-		fmt.Println(hashSuccessResult)
+		fmt.Println("FILE:", path)
+		fmt.Println("SIZE:", hashBytesWritten, "bytes")
+		fmt.Println("HASH:", encodedHashString)
+		fmt.Println()
 	}
 
 	return nil
 }
 
 func hashFile(path string) (string, int64, error) {
-	file, fileOpenErr := os.OpenFile(path, os.O_RDONLY, os.ModePerm)
+	file, fileOpenErr := os.Open(path)
 
 	if fileOpenErr != nil {
 		return "", int64(0), fileOpenErr
