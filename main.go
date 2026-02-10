@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/sha256"
+	"encoding/hex"
 	"flag"
 	"fmt"
 	"io"
@@ -45,21 +46,29 @@ func walkDirCallback(path string, d fs.DirEntry, err error) error {
 	}
 
 	if !d.IsDir() {
-		fileHashErr := hashFile(path)
+		encodedHashString, hashBytesWritten, fileHashErr := hashFile(path)
 
 		if fileHashErr != nil {
 			fmt.Println(fileHashErr)
 		}
+
+		resultForHashing := "\nHashed file " + path + " (" + strconv.Itoa(int(hashBytesWritten)) + " bytes)"
+
+		fmt.Println(resultForHashing)
+
+		hashSuccessResult := "Encoded hash for " + path + " is: " + encodedHashString
+
+		fmt.Println(hashSuccessResult)
 	}
 
 	return nil
 }
 
-func hashFile(path string) error {
+func hashFile(path string) (string, int64, error) {
 	file, fileOpenErr := os.OpenFile(path, os.O_RDONLY, os.ModePerm)
 
 	if fileOpenErr != nil {
-		return fileOpenErr
+		return "", int64(0), fileOpenErr
 	}
 
 	defer file.Close()
@@ -69,14 +78,14 @@ func hashFile(path string) error {
 	bytesWritten, copyErr := io.Copy(hashSet, file)
 
 	if copyErr != nil {
-		return copyErr
+		return "", bytesWritten, copyErr
 	}
 
-	resultForHashing := "Hashed file " + path + "(" + strconv.Itoa(int(bytesWritten)) + " bytes)\n"
+	// Finalize the hash
+	hashInBytes := hashSet.Sum(nil)
 
-	fmt.Println(resultForHashing)
+	// Encode the hashed bytes
+	encodedFileHash := hex.EncodeToString(hashInBytes)
 
-	// TODO: We need to do something with the hashed file here!
-
-	return nil
+	return encodedFileHash, bytesWritten, nil
 }
