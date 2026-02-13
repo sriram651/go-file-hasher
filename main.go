@@ -15,26 +15,32 @@ import (
 )
 
 // Determines number of concurrent go-routines
-var CONCURRENT_WORKERS int = 10
+var CONCURRENT_WORKERS int = 5
+
+// Flag variables
+var directoryPath string
+var workers int
+var quietMode bool
 
 func main() {
-	directoryPath := flag.String("dir", "", "The path to the directory that needs to be parsed.")
+	flag.StringVar(&directoryPath, "dir", "", "The path to the directory that needs to be parsed.")
+	flag.IntVar(&workers, "workers", CONCURRENT_WORKERS, "The number of workers to be created.")
+	flag.BoolVar(&quietMode, "quiet", false, "If true, Only the path and hash will be displayed.")
+	flag.BoolVar(&quietMode, "q", false, "If true, Only the path and hash will be displayed.")
 
 	flag.Parse()
 
-	if *directoryPath == "" {
-		fmt.Println("Flag --dir is required!")
+	if directoryPath == "" {
+		fmt.Println("Flag --dir is required")
 		os.Exit(2)
 	}
 
-	fmt.Println("Path to directory as given:", *directoryPath)
-
-	_, readDirErr := os.ReadDir(*directoryPath)
-
-	if readDirErr != nil {
-		fmt.Println(readDirErr)
-		os.Exit(1)
+	if workers == 0 {
+		fmt.Println("Minimum required workers count is 1")
+		os.Exit(2)
 	}
+
+	fmt.Println("Path to directory as given:", directoryPath)
 
 	var walkDirWaitGroup sync.WaitGroup
 
@@ -42,7 +48,7 @@ func main() {
 	jobs := make(chan string)
 
 	// Loop deploys the workers
-	for i := 0; i < CONCURRENT_WORKERS; i++ {
+	for i := 0; i < workers; i++ {
 		// This is the worker function that waits for the job
 		go func() {
 			for job := range jobs {
@@ -52,7 +58,13 @@ func main() {
 					fmt.Println(fileHashErr)
 				}
 
-				displayString := "\nFile: " + job + "\nSize: " + strconv.Itoa(int(hashBytesWritten)) + "\nHash: " + encodedHashString
+				var displayString string
+
+				if quietMode {
+					displayString = "\n" + job + " - " + encodedHashString + "\n"
+				} else {
+					displayString = "\nFile: " + job + "\nSize: " + strconv.Itoa(int(hashBytesWritten)) + "\nHash: " + encodedHashString
+				}
 
 				fmt.Println(displayString)
 
@@ -77,7 +89,7 @@ func main() {
 		return nil
 	}
 
-	walkDirErr := filepath.WalkDir(*directoryPath, walkDirCallback)
+	walkDirErr := filepath.WalkDir(directoryPath, walkDirCallback)
 
 	if walkDirErr != nil {
 		fmt.Println(walkDirErr)
