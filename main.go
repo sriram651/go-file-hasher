@@ -9,6 +9,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 )
@@ -51,10 +52,9 @@ func main() {
 					fmt.Println(fileHashErr)
 				}
 
-				fmt.Println("FILE:", job)
-				fmt.Println("SIZE:", hashBytesWritten, "bytes")
-				fmt.Println("HASH:", encodedHashString)
-				fmt.Println()
+				displayString := "\nFile: " + job + "\nSize: " + strconv.Itoa(int(hashBytesWritten)) + "\nHash: " + encodedHashString
+
+				fmt.Println(displayString)
 
 				// Report done
 				walkDirWaitGroup.Done()
